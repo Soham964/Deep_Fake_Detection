@@ -1,0 +1,34 @@
+# All video files
+**/*.mp4
+**/*.avi
+**/*.mov
+**/*.mkv
+**/*.webm
+
+# Video datasets (too large for GitHub)
+backend/FaceForensics++_C23/
+backend/videos/
+backend/kaggle-dfdc-master/kaggle-dfdc-master/test_videos/
+backend/kaggle-dfdc-master/kaggle-dfdc-master/pth_fiels/*.pth
+
+# Cache folders
+backend/deepfake-cnn-lstm/cache/
+backend/deepfake-cnn-lstm/cache_fast/
+
+# Saved videos & feedback DB
+backend/saved_videos/
+backend/feedback.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# Node
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

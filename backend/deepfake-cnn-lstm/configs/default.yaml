@@ -1,0 +1,52 @@
+seed: 42
+
+paths:
+  dataset_root: "C:/Users/susov/Downloads/archive/FaceForensics++_C23"
+  work_dir: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm"
+  metadata_csv: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/data/metadata.csv"
+  train_csv: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/data/train.csv"
+  val_csv: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/data/val.csv"
+  celeb_test_csv: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/data/celeb_test.csv"
+  cache_dir: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/cache_fast"
+  checkpoints_dir: "C:/Users/susov/Downloads/archive/deepfake-cnn-lstm/checkpoints"
+
+data:
+  real_folder: "original"
+  fake_folders:
+    - "DeepFakeDetection"
+    - "Deepfakes"
+    - "Face2Face"
+    - "FaceShifter"
+    - "FaceSwap"
+    - "NeuralTextures"
+  fake_per_folder: 166
+  train_ratio: 0.85
+  val_ratio: 0.15
+  video_extensions: [".mp4", ".avi", ".mov", ".mkv"]
+
+preprocessing:
+  fps: 10
+  sequence_length: 16
+  image_size: 128
+  face_margin: 20
+  min_face_size: 40
+
+model:
+  backbone: "efficientnet_b0"
+  pretrained: true
+  lstm_hidden: 256
+  lstm_layers: 1
+  dropout: 0.3
+
+train:
+  batch_size: 12
+  num_workers: 2
+  epochs_stage_a: 6
+  epochs_stage_b: 12
+  lr_stage_a: 0.0001
+  lr_stage_b: 0.00003
+  weight_decay: 0.0001
+  amp: true
+  grad_clip_norm: 1.0
+  early_stopping_patience: 5
+  threshold: 0.5

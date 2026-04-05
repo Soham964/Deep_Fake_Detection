@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>TrueVision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --glass-blur:96px;
+  --glass-sat:200%;
+  --sur:rgba(255,255,255,0.06);
+  --sur2:rgba(255,255,255,0.05);
+  --bdr:rgba(255,255,255,0.16);
+  --bdr2:rgba(255,255,255,0.30);
+  --cyan:#818cf8;--cyan-d:#4338ca;--cyan-glow:rgba(99,102,241,0.42);
+  --real:#00f0a8;--real-d:rgba(0,240,168,0.1);
+  --fake:#ff4466;--fake-d:rgba(255,68,102,0.1);
+  --warn:#ffb830;
+  --t1:rgba(255,255,255,0.96);--t2:rgba(255,255,255,0.6);--t3:rgba(255,255,255,0.32);
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','Consolas',monospace;
+  --window-radius:32px;
+}
+html,body{
+  width:100%;height:100%;background:transparent;font-family:var(--font);color:var(--t1);
+  overflow:hidden;border-radius:var(--window-radius);
+  clip-path:inset(0 round var(--window-radius));
+  user-select:none;-webkit-font-smoothing:antialiased;
+}
+
+/* CARD — Solid dark background */
+.overlay{
+  position:absolute;inset:0;
+  isolation:isolate;
+  background: rgba(18, 18, 18, 0.85); /* Slightly transparent dark background */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:var(--window-radius);
+  clip-path:inset(0 round var(--window-radius));
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 24px 60px rgba(0,0,0,0.4),
+    0 0 0 0.5px rgba(255,255,255,0.05);
+}
+
+/* ANIMATED TOP LINE */
+.top-line{height:2px;flex-shrink:0;background:linear-gradient(90deg,transparent,var(--cyan),var(--cyan-d),transparent);animation:sweep 3s ease-in-out infinite}
+@keyframes sweep{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* TITLEBAR */
+.titlebar{
+  -webkit-app-region:drag;
+  height:42px;min-height:42px;flex-shrink:0;
+  display:flex;align-items:center;padding:0 13px;gap:10px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  position:relative;z-index:1;
+}
+.tb-dots{-webkit-app-region:no-drag;display:flex;gap:5px;align-items:center}
+.dot{width:11px;height:11px;border-radius:50%;cursor:pointer;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.3);transition:opacity .15s,transform .12s}
+.dot:hover{opacity:.8;transform:scale(1.1)}
+.tb-brand{flex:1;display:flex;align-items:center;gap:7px}
+.tb-icon{width:20px;height:20px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--cyan-d));display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px var(--cyan-glow);flex-shrink:0}
+.tb-icon svg{width:11px;height:11px;fill:#fff}
+.tb-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--t1);text-transform:uppercase}
+.tb-right{-webkit-app-region:no-drag;display:flex;align-items:center;gap:6px}
+.api-pill{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:var(--sur2);border:.5px solid var(--bdr);font-family:var(--mono);font-size:8px;letter-spacing:.08em;color:var(--t3);text-transform:uppercase}
+.api-dot{width:5px;height:5px;border-radius:50%;background:var(--t3);transition:background .3s,box-shadow .3s;flex-shrink:0}
+.api-dot.ok{background:var(--real);box-shadow:0 0 5px var(--real)}
+.api-dot.fail{background:var(--fake)}
+
+/* BODY */
+.body{
+  flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 13px;display:flex;flex-direction:column;gap:9px;scrollbar-width:none;
+  position:relative;z-index:1;
+  background:transparent;
+}
+.body::-webkit-scrollbar{display:none}
+
+/* STATUS */
+.status-chip{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%)}
+.s-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.s-dot.ready{background:var(--real);box-shadow:0 0 0 2.5px rgba(0,224,154,.18)}
+.s-dot.working{background:var(--warn);animation:p .85s infinite}
+.s-dot.idle{background:var(--t3)}
+@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.s-text{font-family:var(--mono);font-size:10px;color:var(--t2);letter-spacing:.04em}
+
+/* REC */
+.rec-row{display:none;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;background:rgba(255,59,92,.07);border:.5px solid rgba(255,59,92,.22)}
+.rec-row.show{display:flex}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:var(--fake);animation:p 1s infinite;flex-shrink:0}
+.rec-lbl{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--fake);letter-spacing:1px}
+.rec-timer{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--t1);margin-left:auto}
+
+/* BUTTONS */
+.btn-cap{
+  width:100%;padding:12px 0;border:none;border-radius:12px;
+  background:linear-gradient(150deg,var(--cyan) 0%,var(--cyan-d) 100%);
+  color:#f5f3ff;font-family:var(--font);font-size:13px;font-weight:700;letter-spacing:.04em;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 22px var(--cyan-glow),inset 0 1px 0 rgba(255,255,255,.32);
+  transition:transform .12s,box-shadow .18s,opacity .15s;
+}
+.btn-cap:hover{box-shadow:0 6px 30px rgba(129,140,248,.58)}
+.btn-cap:active{transform:scale(.97);box-shadow:none}
+.btn-cap svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+.btn-stop{background:linear-gradient(150deg,var(--fake) 0%,#b82840 100%);color:#fff;box-shadow:0 4px 18px rgba(255,68,102,.3),inset 0 1px 0 rgba(255,255,255,.2)}
+.btn-stop svg{fill:#fff}
+.btn-stop:hover{box-shadow:0 6px 28px rgba(255,68,102,.5)}
+.btn-sec{
+  width:100%;padding:9px 0;border-radius:12px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+  color:var(--t2);font-family:var(--font);font-size:12px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .15s,border-color .15s,color .15s;
+  backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+}
+.btn-sec:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:var(--t1)}
+.btn-sec svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;flex-shrink:0}
+
+/* SECTION HEADER */
+.sec-hd{display:flex;align-items:center;gap:8px;margin:2px 0}
+.sec-line{flex:1;height:.5px;background:linear-gradient(90deg,transparent,var(--bdr))}
+.sec-line.r{background:linear-gradient(90deg,var(--bdr),transparent)}
+.sec-title{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+/* RESULT CARD */
+.result-card{border-radius:10px;padding:13px;display:none;flex-direction:column;gap:10px;animation:fu .3s ease}
+.result-card.show{display:flex}
+.result-card.fake{background:var(--fake-d);border:.5px solid rgba(255,59,92,.2);box-shadow:0 0 20px rgba(255,59,92,.06)}
+.result-card.real{background:var(--real-d);border:.5px solid rgba(0,224,154,.2);box-shadow:0 0 20px rgba(0,224,154,.06)}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.result-top{display:flex;align-items:center;gap:11px}
+.result-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.result-card.fake .result-icon{background:rgba(255,59,92,.18);color:var(--fake)}
+.result-card.real .result-icon{background:rgba(0,224,154,.18);color:var(--real)}
+.result-info{flex:1}
+.result-verdict{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.result-card.fake .result-verdict{color:var(--fake)}
+.result-card.real .result-verdict{color:var(--real)}
+.result-score{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1;margin-top:2px;color:var(--t1);letter-spacing:-.02em}
+.result-conf{font-family:var(--mono);font-size:9px;color:var(--t2);margin-top:1px}
+
+/* BARS */
+.bars{display:flex;flex-direction:column;gap:5px}
+.bar-row{display:flex;flex-direction:column;gap:3px}
+.bar-head{display:flex;justify-content:space-between}
+.bar-lbl{font-family:var(--mono);font-size:8px;color:var(--t2);letter-spacing:.08em;text-transform:uppercase}
+.bar-pct{font-family:var(--mono);font-size:8px;color:var(--t2)}
+.bar-track{height:3px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;width:0%;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
+.bar-fill.real{background:var(--real)}
+.bar-fill.fake{background:var(--fake)}
+
+/* FEEDBACK */
+.feedback{display:none;flex-direction:column;gap:6px}
+.feedback.show{display:flex}
+.fb-lbl{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:.12em;text-transform:uppercase}
+.fb-btns{display:flex;gap:6px}
+.btn-fb{flex:1;padding:7px 0;border-radius:8px;background:var(--sur2);border:.5px solid var(--bdr);color:var(--t2);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:background .15s,border-color .15s,color .15s}
+.btn-fb svg{width:11px;height:11px;fill:currentColor}
+.btn-fb.up:hover,.btn-fb.active.up{background:rgba(0,224,154,.1);border-color:rgba(0,224,154,.4);color:var(--real)}
+.btn-fb.down:hover,.btn-fb.active.down{background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.4);color:var(--fake)}
+
+/* STATS HORIZONTAL STRIP */
+.stats-strip{display:flex;align-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;overflow:hidden;backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1)}
+.stat-item{flex:1;padding:9px 6px;text-align:center}
+.stat-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--t1);line-height:1;letter-spacing:normal}
+.stat-val.r{color:var(--real)}.stat-val.f{color:var(--fake)}
+.stat-key{font-size:8px;color:var(--t3);margin-top:3px;letter-spacing:.04em;text-transform:uppercase}
+.stat-sep{width:.5px;height:30px;background:var(--bdr);flex-shrink:0}
+
+/* HISTORY TIMELINE */
+.history-list{display:flex;flex-direction:column;gap:0}
+.hi-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid rgba(255,255,255,.07);position:relative;padding-left:10px}
+.hi-item:last-child{border-bottom:none}
+.hi-item::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2.5px;height:70%;border-radius:2px}
+.hi-item.fake::before{background:var(--fake)}
+.hi-item.real::before{background:var(--real)}
+.hi-emoji{font-size:11px;width:16px;text-align:center;flex-shrink:0}
+.hi-name{flex:1;font-family:var(--mono);font-size:9px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi-badge{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.hi-badge.real{background:rgba(0,224,154,.12);color:var(--real);border:.5px solid rgba(0,224,154,.2)}
+.hi-badge.fake{background:rgba(255,59,92,.12);color:var(--fake);border:.5px solid rgba(255,59,92,.2)}
+.hi-empty{font-family:var(--mono);font-size:9px;color:var(--t3);text-align:center;padding:9px 0;letter-spacing:.03em}
+
+/* PROC OVERLAY */
+.proc-overlay{position:fixed;inset:0;border-radius:var(--window-radius);clip-path:inset(0 round var(--window-radius));background:linear-gradient(180deg, rgba(32,28,52,0.28), rgba(14,12,28,0.38));backdrop-filter:blur(56px) saturate(195%);-webkit-backdrop-filter:blur(56px) saturate(195%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+.proc-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:34px;height:34px;border:2px solid rgba(129,140,248,.22);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-title{font-size:12px;font-weight:700;color:var(--t1)}
+.proc-sub{font-family:var(--mono);font-size:9px;color:var(--t2);letter-spacing:.05em}
+.pipeline{display:flex;flex-direction:column;gap:4px;width:180px}
+.pipe-step{display:flex;align-items:center;gap:7px;padding:5px 9px;background:rgba(255,255,255,.03);border:.5px solid rgba(255,255,255,.05);border-radius:6px}
+.pipe-dot{width:5px;height:5px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:background .3s}
+.pipe-dot.active{background:var(--cyan);animation:p .8s infinite}
+.pipe-dot.done{background:var(--real);animation:none}
+.pipe-txt{font-family:var(--mono);font-size:9px;color:var(--t2)}
+.pipe-txt.done{color:var(--t3)}
+
+/* SCAN LINE */
+.scan-line{position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px rgba(165,180,252,.55);top:0;opacity:0;pointer-events:none;z-index:49}
+.scan-line.active{opacity:1;animation:sm 1.8s ease-in-out infinite}
+@keyframes sm{0%{top:42px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+
+/* TOAST */
+.toast{position:fixed;bottom:9px;left:50%;transform:translateX(-50%) translateY(4px);background:rgba(22,18,42,.72);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:.5px solid rgba(196,181,253,.35);border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:10px;color:var(--t1);white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="overlay">
+  <div class="top-line"></div>
+
+  <div class="titlebar">
+    <div class="tb-dots">
+      <div class="dot" id="closeBtn"    style="background:#ff5f57" title="Close"></div>
+      <div class="dot" id="minimizeBtn" style="background:#febc2e" title="Minimize"></div>
+      <div class="dot"                  style="background:#28c840"></div>
+    </div>
+    <div class="tb-brand">
+      <div class="tb-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6L12 2z"/></svg>
+      </div>
+      <span class="tb-name">TrueVision</span>
+    </div>
+    <div class="tb-right">
+      <div class="api-pill">
+        <div class="api-dot" id="backendDot"></div>
+        <span>API</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="status-chip">
+      <div class="s-dot ready" id="statusDot"></div>
+      <span class="s-text" id="statusText">System ready</span>
+    </div>
+
+    <div class="rec-row" id="recRow">
+      <div class="rec-dot"></div>
+      <span class="rec-lbl">REC</span>
+      <span class="rec-timer" id="timer">00:00</span>
+    </div>
+
+    <button class="btn-cap" id="captureBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="fill:none;"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+      Start Capture
+    </button>
+    <button class="btn-cap btn-stop" id="stopBtn" style="display:none">
+      <svg viewBox="0 0 16 16" fill="#fff"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+      Stop &amp; Analyze
+    </button>
+
+    <input type="file" id="fileInput" accept="video/*" style="display:none"/>
+    <button class="btn-sec" id="uploadBtn">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload Video File
+    </button>
+
+    <!-- Result -->
+    <div class="sec-hd"><span class="sec-line"></span><span class="sec-title">Analysis Result</span><span class="sec-line r"></span></div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-top">
+        <div class="result-icon" id="resultIcon">?</div>
+        <div class="result-info">
+          <div class="result-verdict" id="resultVerdict">—</div>
+          <div class="result-score"   id="resultScore">—</div>
+        </div>
+      </div>
+      <div class="bars">
+        <div class="bar-row">
+          <div class="bar-head"><span class="bar-lbl">Real</span><span class="bar-pct" id="realPct">—</span></div>
+          <div class="bar-track"><div class="bar-fill real" id="realFill"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-head"><span class="bar-lbl">Fake</span><span class="bar-pct" id="fakePct">—</span></div>
+          <div class="bar-track"><div class="bar-fill fake" id="fakeFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feedback" id="feedbackSection">
+      <span class="fb-lbl">Was this correct?</span>
+      <div class="fb-btns">
+        <button class="btn-fb up" id="yesBtn">
+          <svg viewBox="0 0 16 16"><path d="M6.956 1.745C7.021.81 7.908.087 8.864.325l.261.066c.463.116.874.456 1.012.965.22.816.533 2.511.062 4.51a18.68 18.68 0 0 1 .443-.051c.713-.065 1.669-.072 2.516.21.518.173.994.681 1.2 1.273.184.532.16 1.162-.234 1.733.058.119.103.242.138.363.077.27.113.567.113.856 0 .289-.036.586-.113.856-.039.135-.09.273-.16.404.169.387.107.819-.003 1.148a3.163 3.163 0 0 1-.488.901c.054.152.076.312.076.465 0 .305-.089.625-.253.912C13.1 15.522 12.437 16 11.5 16H8c-.605 0-1.07-.081-1.466-.218a4.82 4.82 0 0 1-.97-.484l-.048-.03c-.504-.307-.999-.609-2.068-.722C2.682 14.464 2 13.846 2 13V9c0-.85.685-1.432 1.357-1.615.849-.232 1.574-.787 2.132-1.41.56-.627.914-1.28 1.039-1.639.199-.575.356-1.539.428-2.59z"/></svg>
+          Correct
+        </button>
+        <button class="btn-fb down" id="noBtn">
+          <svg viewBox="0 0 16 16"><path d="M9.044 14.255C8.979 15.19 8.092 15.913 7.136 15.675l-.261-.066c-.463-.116-.874-.456-1.012-.965-.22-.816-.533-2.511-.062-4.51a18.68 18.68 0 0 1-.443.051c-.713.065-1.669.072-2.516-.21-.518-.173-.994-.681-1.2-1.273-.184-.532-.16-1.162.234-1.733a3.625 3.625 0 0 1-.138-.363 2.998 2.998 0 0 1-.113-.856c0-.289.036-.586.113-.856.039-.135.09-.273.16-.404a2.697 2.697 0 0 1-.169-1.148 3.163 3.163 0 0 1 .488-.901 2.379 2.379 0 0 1-.076-.465c0-.305.089-.625.253-.912C2.9.478 3.563 0 4.5 0H8c.605 0 1.07.081 1.466.218a4.82 4.82 0 0 1 .97.484l.048.03c.504.307.999.609 2.068.722C13.318 1.536 14 2.154 14 3V7c0 .85-.685 1.432-1.357 1.615-.849.232-1.574.787-2.132 1.41-.56.627-.914 1.28-1.039 1.639-.199.575-.356 1.539-.428 2.59z"/></svg>
+          Wrong
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sec-hd"><span class="sec-line"></span><span class="sec-title">Session</span><span class="sec-line r"></span></div>
+    <div class="stats-strip">
+      <div class="stat-item"><div class="stat-val" id="totalScans">0</div><div class="stat-key">Total</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat-item"><div class="stat-val f" id="fakeCount">0</div><div class="stat-key">Fakes</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat-item"><div class="stat-val r" id="realCount">0</div><div class="stat-key">Real</div></div>
+    </div>
+
+    <!-- History -->
+    <div class="sec-hd"><span class="sec-line"></span><span class="sec-title">Recent Scans</span><span class="sec-line r"></span></div>
+    <div class="history-list" id="historyList">
+      <div class="hi-empty" id="historyEmpty">No scans yet</div>
+    </div>
+  </div>
+
+  <div class="scan-line" id="scanLine"></div>
+  <div class="proc-overlay" id="procOverlay">
+    <div class="spinner"></div>
+    <div style="text-align:center;display:flex;flex-direction:column;gap:3px">
+      <span class="proc-title">Analyzing video</span>
+      <span class="proc-sub" id="procSub">Preparing pipeline…</span>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step"><div class="pipe-dot" id="pd0"></div><span class="pipe-txt" id="pt0">Frame extraction</span></div>
+      <div class="pipe-step"><div class="pipe-dot" id="pd1"></div><span class="pipe-txt" id="pt1">Face detection</span></div>
+      <div class="pipe-step"><div class="pipe-dot" id="pd2"></div><span class="pipe-txt" id="pt2">Feature analysis</span></div>
+      <div class="pipe-step"><div class="pipe-dot" id="pd3"></div><span class="pipe-txt" id="pt3">Model inference</span></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+let mediaRecorder=null,recordedChunks=[],timerInterval=null,elapsedSecs=0,lastResult=null;
+let sessionTotal=0,sessionFake=0,sessionReal=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function setStatus(cls,txt){
+  document.getElementById('statusDot').className='s-dot '+cls;
+  document.getElementById('statusText').textContent=txt;
+}
+function showToast(msg,dur=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+function resetPipeline(){
+  for(let i=0;i<4;i++){
+    document.getElementById('pd'+i).className='pipe-dot';
+    document.getElementById('pt'+i).className='pipe-txt';
+  }
+}
+async function animatePipeline(){
+  const lbls=['Extracting frames…','Detecting faces…','Analyzing features…','Running inference…'];
+  for(let i=0;i<4;i++){
+    if(i>0){document.getElementById('pd'+(i-1)).className='pipe-dot done';document.getElementById('pt'+(i-1)).className='pipe-txt done';}
+    document.getElementById('pd'+i).className='pipe-dot active';
+    document.getElementById('procSub').textContent=lbls[i];
+    await sleep(550);
+  }
+}
+
+// Window controls
+document.getElementById('closeBtn').addEventListener('click',()=>window.electronAPI?.closeApp());
+document.getElementById('minimizeBtn').addEventListener('click',()=>window.electronAPI?.minimizeApp());
+
+// Backend health
+async function checkBackend(){
+  const dot=document.getElementById('backendDot');
+  try{const r=await fetch(`${API}/health`,{signal:AbortSignal.timeout(2000)});dot.className=r.ok?'api-dot ok':'api-dot fail';}
+  catch{dot.className='api-dot fail';}
+}
+checkBackend();setInterval(checkBackend,10000);
+
+// Auto screen source
+async function getScreenSource(){
+  if(!window.electronAPI)return null;
+  const sources=await window.electronAPI.getSources();
+  return sources.find(s=>s.id.startsWith('screen:')||/entire screen|screen \d/i.test(s.name))||sources[0];
+}
+
+// Capture
+document.getElementById('captureBtn').addEventListener('click',async()=>{
+  const src=await getScreenSource();
+  if(!src){showToast('No screen source found');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{mandatory:{chromeMediaSource:'desktop',chromeMediaSourceId:src.id,maxWidth:1920,maxHeight:1080,maxFrameRate:30}}});}
+  catch(e){showToast('Capture failed: '+e.message);return;}
+  recordedChunks=[];elapsedSecs=0;
+  mediaRecorder=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp8'});
+  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data);};
+  mediaRecorder.onstop=handleStop;
+  mediaRecorder.start(1000);
+  timerInterval=setInterval(()=>{
+    elapsedSecs++;
+    const m=String(Math.floor(elapsedSecs/60)).padStart(2,'0');
+    const s=String(elapsedSecs%60).padStart(2,'0');
+    document.getElementById('timer').textContent=`${m}:${s}`;
+  },1000);
+  document.getElementById('recRow').classList.add('show');
+  document.getElementById('captureBtn').style.display='none';
+  document.getElementById('stopBtn').style.display='flex';
+  setStatus('working','Recording screen…');
+  showToast(`Capturing: ${src.name}`);
+});
+
+document.getElementById('stopBtn').addEventListener('click',()=>{
+  if(mediaRecorder&&mediaRecorder.state!=='inactive'){mediaRecorder.stop();mediaRecorder.stream.getTracks().forEach(t=>t.stop());}
+  clearInterval(timerInterval);
+  document.getElementById('recRow').classList.remove('show');
+  document.getElementById('stopBtn').style.display='none';
+  document.getElementById('captureBtn').style.display='flex';
+});
+
+async function handleStop(){
+  resetPipeline();
+  document.getElementById('procOverlay').classList.add('show');
+  document.getElementById('scanLine').classList.add('active');
+  setStatus('working','Analyzing…');
+  try{
+    const blob=new Blob(recordedChunks,{type:'video/webm'});
+    if(window.electronAPI)await window.electronAPI.saveVideo(new Uint8Array(await blob.arrayBuffer()));
+    const fd=new FormData();fd.append('video',blob,'capture.webm');
+    const [res]=await Promise.all([fetch(`${API}/predict`,{method:'POST',body:fd}),animatePipeline()]);
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    lastResult=data;showResult(data);
+  }catch(err){setStatus('idle','Error');showToast('⚠ '+err.message);}
+  finally{document.getElementById('procOverlay').classList.remove('show');document.getElementById('scanLine').classList.remove('active');}
+}
+
+// Upload
+document.getElementById('uploadBtn').addEventListener('click',()=>document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change',async()=>{
+  const file=document.getElementById('fileInput').files[0];if(!file)return;
+  resetPipeline();
+  document.getElementById('procOverlay').classList.add('show');
+  document.getElementById('scanLine').classList.add('active');
+  setStatus('working','Analyzing…');
+  try{
+    const fd=new FormData();fd.append('video',file,file.name);
+    const [res]=await Promise.all([fetch(`${API}/predict`,{method:'POST',body:fd}),animatePipeline()]);
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    lastResult=data;showResult(data);
+  }catch(err){setStatus('idle','Error');showToast('⚠ '+err.message);}
+  finally{document.getElementById('procOverlay').classList.remove('show');document.getElementById('scanLine').classList.remove('active');document.getElementById('fileInput').value='';}
+});
+
+// Show result
+function showResult({result,confidence}){
+  const isFake=result==='FAKE';
+  const fakeP=Math.round(confidence*100);
+  const realP=100-fakeP;
+  const card=document.getElementById('resultCard');
+  card.className='result-card show '+(isFake?'fake':'real');
+  document.getElementById('resultIcon').textContent=isFake?'✗':'✓';
+  document.getElementById('resultVerdict').textContent=isFake?'DEEPFAKE DETECTED':'AUTHENTIC VIDEO';
+  document.getElementById('resultScore').textContent=(isFake?fakeP:realP)+'%';
+  document.getElementById('realPct').textContent=realP+'%';
+  document.getElementById('fakePct').textContent=fakeP+'%';
+  setTimeout(()=>{document.getElementById('realFill').style.width=realP+'%';document.getElementById('fakeFill').style.width=fakeP+'%';},80);
+  document.getElementById('feedbackSection').className='feedback show';
+  document.querySelectorAll('.btn-fb').forEach(b=>b.classList.remove('active'));
+  setStatus(isFake?'idle':'ready',isFake?'Fake detected':'Video authentic');
+  showToast(isFake?`⚠ Deepfake — ${fakeP}% probability`:`✓ Authentic — ${realP}% probability`);
+  sessionTotal++;if(isFake)sessionFake++;else sessionReal++;
+  document.getElementById('totalScans').textContent=sessionTotal;
+  document.getElementById('fakeCount').textContent=sessionFake;
+  document.getElementById('realCount').textContent=sessionReal;
+  const emptyEl=document.getElementById('historyEmpty');if(emptyEl)emptyEl.remove();
+  const list=document.getElementById('historyList');
+  const icons=['🎬','📹','🎥','📺','🔍','🎞️'];
+  const item=document.createElement('div');
+  item.className='hi-item '+(isFake?'fake':'real');
+  item.innerHTML=`<span class="hi-emoji">${icons[sessionTotal%icons.length]}</span><span class="hi-name">scan #${sessionTotal}</span><span class="hi-badge ${isFake?'fake':'real'}">${isFake?'FAKE':'REAL'}</span>`;
+  list.insertBefore(item,list.firstChild);
+  const all=list.querySelectorAll('.hi-item');if(all.length>4)all[all.length-1].remove();
+}
+
+// Feedback
+async function sendFeedback(type){
+  document.querySelectorAll('.btn-fb').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.btn-fb.'+(type==='up'?'up':'down')).classList.add('active');
+  if(!lastResult){showToast('No result yet');return;}
+  const fb=type==='up'?'correct':'wrong';
+  const trueLabel=fb==='correct'?lastResult.result:(lastResult.result==='FAKE'?'REAL':'FAKE');
+  try{
+    const res=await fetch(`${API}/feedback`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({video_path:lastResult.video_path,prediction:lastResult.result,true_label:trueLabel,confidence:lastResult.confidence,feedback:fb})});
+    const data=await res.json();showToast(data.stored?'✓ Feedback saved!':'✓ Got it!');
+  }catch{showToast('⚠ Could not save feedback');}
+
+  // Reset back to ready state after 1.5s
+  setTimeout(()=>{
+    const card=document.getElementById('resultCard');
+    if(card) card.className='result-card';
+    document.getElementById('feedbackSection').className='feedback';
+    document.getElementById('realFill').style.width='0%';
+    document.getElementById('fakeFill').style.width='0%';
+    document.getElementById('realPct').textContent='—';
+    document.getElementById('fakePct').textContent='—';
+    document.querySelectorAll('.btn-fb').forEach(b=>b.classList.remove('active'));
+    lastResult=null;
+    setStatus('ready','Ready to scan');
+  },1500);
+}
+document.getElementById('yesBtn').addEventListener('click',()=>sendFeedback('up'));
+document.getElementById('noBtn').addEventListener('click',()=>sendFeedback('down'));
+</script>
+</body>
+</html>
