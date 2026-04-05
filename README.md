@@ -1,4 +1,4 @@
-# DeepGuard — Real-Time Deepfake Detection Overlay
+# TRUEVISION — Real-Time Deepfake Detection Overlay
 
 A desktop overlay app that detects deepfake videos in real-time using an ensemble of deep learning models. Capture any screen content, analyze it instantly, and provide feedback to continuously improve the model.
 
