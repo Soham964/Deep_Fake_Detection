@@ -153,9 +153,6 @@ Trains only the last layers (`layer4` + `fc`) of ResNeXt on your labeled feedbac
 
 ---
 
-## Author
-
-**Susovan Patra**
 
 ---
 
