@@ -1,6 +1,6 @@
 """
 api.py — Flask backend for deepfake detection
-Ensemble: ResNeXt-50 + EfficientNet-B4
+Ensemble: ResNeXt-50 and EfficientNet-B4
 Run: python api.py
 """
 
