@@ -188,10 +188,13 @@ Training and evaluation charts are available in `eval_results/`:
 
 ---
 
-## Author
+## Authors
 
 **Susovan Patra**
 - GitHub: [@Susovan12](https://github.com/Susovan12)
+
+**Soham Datta**
+- GitHub: [@Soham964](https://github.com/Soham964)
 
 ---
 
